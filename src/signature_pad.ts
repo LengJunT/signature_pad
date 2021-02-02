@@ -30,6 +30,10 @@ export interface Options {
   velocityFilterWeight?: number;
   onBegin?: (event: MouseEvent | Touch) => void;
   onEnd?: (event: MouseEvent | Touch) => void;
+  /**
+   * @description 是否对外层容器进行了旋转
+   */
+  isContainerRotate?: boolean
 }
 
 export interface PointGroup {
@@ -60,6 +64,7 @@ export default class SignaturePad {
   private _lastVelocity: number;
   private _lastWidth: number;
   private _strokeMoveUpdate: (event: MouseEvent | Touch) => void;
+  private _isContainerRotate?: boolean
   /* tslint:enable: variable-name */
 
   constructor(
@@ -82,7 +87,7 @@ export default class SignaturePad {
     this.backgroundColor = options.backgroundColor || 'rgba(0,0,0,0)';
     this.onBegin = options.onBegin;
     this.onEnd = options.onEnd;
-
+    this._isContainerRotate = options.isContainerRotate
     this._strokeMoveUpdate = this.throttle
       ? throttle(SignaturePad.prototype._strokeUpdate, this.throttle)
       : SignaturePad.prototype._strokeUpdate;
@@ -271,8 +276,9 @@ export default class SignaturePad {
       return;
     }
 
-    const x = event.clientX;
-    const y = event.clientY;
+    const { clientY, clientX } = event
+    const x = this._isContainerRotate ?  clientY : clientX;
+    const y = this._isContainerRotate ? document.body.clientWidth -  clientX: clientY
 
     const point = this._createPoint(x, y);
     const lastPointGroup = this._data[this._data.length - 1];
@@ -341,8 +347,15 @@ export default class SignaturePad {
   }
 
   private _createPoint(x: number, y: number): Point {
-    const rect = this.canvas.getBoundingClientRect();
-
+    const {top, left} = this.canvas.getBoundingClientRect();
+    const rect = {
+      top,
+      left
+    }
+    if (this._isContainerRotate) {
+      rect.top = left
+      rect.left = top
+    }
     return new Point(x - rect.left, y - rect.top, new Date().getTime());
   }
 

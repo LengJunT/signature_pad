@@ -1,6 +1,6 @@
 /*!
  * Signature Pad v3.0.0-beta.4 | https://github.com/szimek/signature_pad
- * (c) 2020 Szymon Nowak | Released under the MIT license
+ * (c) 2021 Szymon Nowak | Released under the MIT license
  */
 
 (function (global, factory) {
@@ -194,6 +194,7 @@
             this.backgroundColor = options.backgroundColor || 'rgba(0,0,0,0)';
             this.onBegin = options.onBegin;
             this.onEnd = options.onEnd;
+            this._isContainerRotate = options.isContainerRotate;
             this._strokeMoveUpdate = this.throttle
                 ? throttle(SignaturePad.prototype._strokeUpdate, this.throttle)
                 : SignaturePad.prototype._strokeUpdate;
@@ -302,8 +303,9 @@
                 this._strokeBegin(event);
                 return;
             }
-            var x = event.clientX;
-            var y = event.clientY;
+            var clientY = event.clientY, clientX = event.clientX;
+            var x = this._isContainerRotate ? clientY : clientX;
+            var y = this._isContainerRotate ? document.body.clientWidth - clientX : clientY;
             var point = this._createPoint(x, y);
             var lastPointGroup = this._data[this._data.length - 1];
             var lastPoints = lastPointGroup.points;
@@ -357,7 +359,15 @@
             this._ctx.fillStyle = this.penColor;
         };
         SignaturePad.prototype._createPoint = function (x, y) {
-            var rect = this.canvas.getBoundingClientRect();
+            var _a = this.canvas.getBoundingClientRect(), top = _a.top, left = _a.left;
+            var rect = {
+                top: top,
+                left: left
+            };
+            if (this._isContainerRotate) {
+                rect.top = left;
+                rect.left = top;
+            }
             return new Point(x - rect.left, y - rect.top, new Date().getTime());
         };
         SignaturePad.prototype._addPoint = function (point) {
